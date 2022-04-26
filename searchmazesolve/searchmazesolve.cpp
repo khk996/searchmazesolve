@@ -2,6 +2,7 @@
 //
 
 #include <iostream>
+#include <vector>
 
 using namespace std;
 
@@ -99,6 +100,48 @@ int print_map(int maze[15][15])
 	return 0;
 }
 
+int search_maze_width(vector<vector<vector<int>>> reachable, int state[4], int maze[15][15], 
+	vector<vector<vector<int>>> next_reachable)
+{
+	bool stateis0 = false;
+	vector<vector<vector<int>>> reset;
+
+	for (int i = 0; i < reachable.size(); i++)
+	{
+		if ((reachable[i][0][0] == 13) && (reachable[i][0][1] == 13))
+		{
+
+		}
+
+		search_state(reachable[i][0][0],reachable[i][0][1],state, maze);
+		for (int j = 0; j < 4; j++)
+		{
+			if (state[j] == 0)
+			{
+				stateis0 = true;
+				reachable[i].insert(reachable[i].begin(), { move(reachable[i][0][0], reachable[i][0][1], j, maze, true)[0],
+					move(reachable[i][0][0], reachable[i][0][1], j, maze, true)[1] });
+				next_reachable.insert(next_reachable.begin(),reachable[i]);
+			}
+		}
+	}
+
+	search_maze_width(next_reachable, state,maze, reset);
+
+	return 0;
+}
+
+int print_root(vector<vector<vector<int>>> answer)
+{
+	for (int i = 0; i < answer.size(); i++)
+	{
+		for (int j = 0; answer[i].size(); j++)
+		{
+			cout << "(" << answer[i][answer[i].size() - j][0] << ", " << answer[i][answer[i].size() - j][0] << ") ->";
+		}
+		cout << endl;
+	}
+}
 int main()
 {
 	int maze[15][15];
@@ -107,6 +150,10 @@ int main()
 	int state[4];	//{上、右、下、左}
 	bool stateis0;
 	bool stateis1;
+	vector<vector<vector<int>>> reachable;
+	vector<vector<vector<int>>> next_reachable;
+	vector<vector<int>> answer_root;
+	bool isgoal;
 
 	//初期化
 	make_maze(maze);
@@ -114,61 +161,124 @@ int main()
 	maze[1][1] = 1;
 	stateis0 = false;
 	stateis1 = false;
+	isgoal = false;
+	reachable = {{{1,1}}};
 
 	//探索方法の選択
 	cin >> select_type;
 
 	//探索
-	while ((x < 13) || (y < 13))
-	{
-		//print_map(maze);
-		//cout << endl;
-		//cout << "今：(" << x << ", " << y << ")" << endl;
-
-		search_state(x, y, state, maze);
-
 		switch (select_type)
 		{
 		case 0:	//縦型
-			for (i = 0; i < 4; i++)
+			while ((x < 13) || (y < 13))
 			{
-				if (state[i] == 0)
-				{
-					stateis0 = true;
-					break;
-				}
-			}
+				//print_map(maze);
+				//cout << endl;
+				//cout << "今：(" << x << ", " << y << ")" << endl;
 
-			if (stateis0)
-			{
-				x = move(x, y, i, maze, true)[0];
-				y = move(x, y, i, maze, true)[1];
-			}
-			else
-			{
-				for (j = 0; j < 4; j++)
+
+				search_state(x, y, state, maze);
+
+				for (i = 0; i < 4; i++)
 				{
-					if (state[j] == 1)
+					if (state[i] == 0)
 					{
-						stateis1 = true;
+						stateis0 = true;
 						break;
 					}
 				}
-				if (stateis1)
+
+				if (stateis0)
 				{
-					x = move(x, y, j, maze, false)[0];
-					y = move(x, y, j, maze, false)[1];
+					x = move(x, y, i, maze, true)[0];
+					y = move(x, y, i, maze, true)[1];
+				}
+				else
+				{
+					for (j = 0; j < 4; j++)
+					{
+						if (state[j] == 1)
+						{
+							stateis1 = true;
+							break;
+						}
+					}
+					if (stateis1)
+					{
+						x = move(x, y, j, maze, false)[0];
+						y = move(x, y, j, maze, false)[1];
+					}
+				}
+				//cout << "(" << x << ", " << y << ")" << endl;
+				stateis0 = stateis1 = false;
+				maze[x][y] = 1;
+			}
+			break;
+		case 1:	//横型
+			search_maze_width(reachable, state, maze, next_reachable);
+
+			print_root(next_reachable);
+			/*
+			while (1)
+			{
+				for (int i = 0; i < reachable.size(); i++)
+				{
+					if ((reachable[i][0][0] == 13) && (reachable[i][0][1] == 13))
+					{
+						isgoal = true;
+						cout << "reached" << endl;
+						answer_root = reachable[i];
+						break;
+					}	
+
+					search_state(reachable[i][0][0], reachable[i][0][1], state, maze);
+					cout << "now:(" << reachable[i][0][0] << ", " << reachable[i][0][0] << ")" << endl;
+					for (int j = 0; j < 4; j++)
+					{
+						if (state[j] == 0)
+						{
+							stateis0 = true;
+							next_reachable.push_back({ { move(reachable[i][0][0], reachable[i][0][1], j, maze, true)[0],
+														move(reachable[i][0][0], reachable[i][0][1], j, maze, true)[1] } });
+							cout << "next_rootable:(" << next_reachable[i][0][0] << ", " << next_reachable[i][0][1] << ")" ;
+						}
+					}
+					cout << endl;
+
+					if (!stateis0)
+					{
+						next_reachable.push_back({ { move(reachable[i][0][0], reachable[i][0][1], 2, maze, false)[0],
+														move(reachable[i][0][0], reachable[i][0][1], 2, maze, false)[1] } });
+						cout << "nonstepable" << endl;
+					}
+					stateis0 = false;
+				}
+
+				if (isgoal)	//終了条件
+					break;
+
+				reachable = next_reachable;
+				
+				for (int i = 0; i < next_reachable.size(); i++)
+				{
+					next_reachable.erase(next_reachable.begin());
 				}
 			}
+			
+			for (int i = 0; i < answer_root.size(); i++)
+			{
+				cout << "(" << answer_root[i][0] << ", " << answer_root[i][1] << ") -> " ;
+			}
+			cout << endl;
+			isgoal = false;
+			*/
+
 			break;
 		default:
 			break;
 		}
-		//cout << "(" << x << ", " << y << ")" << endl;
-		stateis0 = stateis1 = false;
-		maze[x][y] = 1;
 
-	}
 	print_map(maze);
 }
 
